@@ -8,7 +8,7 @@ const featuredProducts = [
   {
     _id: 'p1',
     title: 'Urban Cyberpunk Oversized Hoodie',
-    price: 8500.00,
+    price: 850.00,
     originalPrice: 110.00,
     category: 'Streetwear & Hoodies',
     sizes: ['S', 'M', 'L', 'XL'],

@@ -29,7 +29,7 @@ const productsData = [
   {
     title: 'Urban Cyberpunk Oversized Hoodie',
     description: 'High-density heavy cotton streetwear hoodie featuring a dropped shoulder cut, deep hood, and rib-knit cuffs.',
-    price: 85.00,
+    price: 850.00,
     originalPrice: 110.00,
     category: 'Streetwear & Hoodies',
     sizes: ['S', 'M', 'L', 'XL'],
