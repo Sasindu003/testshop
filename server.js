@@ -10,6 +10,7 @@ const errorHandler = require('./middleware/errorHandler');
 
 // Route imports
 const authRoutes = require('./routes/authRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
 const fileRoutes = require('./routes/fileRoutes');
 
 const app = express();
@@ -62,6 +63,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 app.use('/api/auth', authLimiter, authRoutes);
+app.use('/api/categories', categoryRoutes);
 app.use('/api/files', fileRoutes);
 
 // -- 404 handler --
