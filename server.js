@@ -16,6 +16,7 @@ const couponRoutes = require('./routes/couponRoutes');
 const fileRoutes = require('./routes/fileRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const userRoutes = require('./routes/userRoutes');
+const dashboardRoutes = require('./routes/dashboardRoutes');
 
 const app = express();
 
@@ -73,6 +74,7 @@ app.use('/api/coupons', couponRoutes);
 app.use('/api/files', fileRoutes);
 app.use('/api', orderRoutes);
 app.use('/api', userRoutes);
+app.use('/api', dashboardRoutes);
 
 // -- 404 handler --
 app.use((_req, res) => {
