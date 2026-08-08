@@ -134,3 +134,77 @@ exports.deleteProduct = asyncHandler(async (req, res) => {
 
   sendSuccess(res, null, 'Product deactivated');
 });
+
+/**
+ * PATCH /api/products/:id/stock
+ * Staff / Admin / Owner. Adjusts one size's stock up or down and records who made the change.
+ */
+exports.adjustStock = asyncHandler(async (req, res) => {
+  const { size, delta } = req.body;
+
+  if (!size) throw createError('Size label is required', 400);
+  if (delta === undefined || typeof delta !== 'number') {
+    throw createError('Delta numeric value is required', 400);
+  }
+
+  const product = await Product.findById(req.params.id);
+  if (!product) throw createError('Product not found', 404);
+
+  const sizeEntry = product.sizes.find((s) => s.size === size);
+  if (!sizeEntry) {
+    throw createError(`Size '${size}' not found on this product`, 404);
+  }
+
+  const newStock = sizeEntry.stock + delta;
+  if (newStock < 0) {
+    throw createError(`Insufficient stock. Current stock for size '${size}' is ${sizeEntry.stock}`, 400);
+  }
+
+  sizeEntry.stock = newStock;
+  await product.save();
+
+  sendSuccess(
+    res,
+    {
+      productId: product._id,
+      size: sizeEntry.size,
+      stock: sizeEntry.stock,
+      adjustedBy: {
+        _id: req.user._id,
+        name: req.user.name,
+        role: req.user.role,
+      },
+    },
+    'Stock updated successfully'
+  );
+});
+
+/**
+ * GET /api/products/admin/inventory/low-stock
+ * Staff / Admin / Owner. Aggregation pipeline unwinding sizes and filtering stock below a threshold.
+ */
+exports.getLowStockInventory = asyncHandler(async (req, res) => {
+  const threshold = parseInt(req.query.threshold, 10) || 5;
+
+  const lowStockItems = await Product.aggregate([
+    { $match: { isActive: true } },
+    { $unwind: '$sizes' },
+    { $match: { 'sizes.stock': { $lte: threshold } } },
+    {
+      $project: {
+        _id: 1,
+        name: 1,
+        slug: 1,
+        category: 1,
+        size: '$sizes.size',
+        stock: '$sizes.stock',
+        priceOverride: '$sizes.priceOverride',
+        basePrice: 1,
+      },
+    },
+    { $sort: { stock: 1, name: 1 } },
+  ]);
+
+  sendSuccess(res, { threshold, count: lowStockItems.length, items: lowStockItems });
+});
+

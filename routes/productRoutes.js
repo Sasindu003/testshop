@@ -9,7 +9,17 @@ const {
   createProduct,
   updateProduct,
   deleteProduct,
+  adjustStock,
+  getLowStockInventory,
 } = require('../controllers/productController');
+
+// GET /api/products/admin/inventory/low-stock
+router.get(
+  '/admin/inventory/low-stock',
+  protect,
+  authorize('admin', 'staff', 'owner'),
+  getLowStockInventory
+);
 
 // Admin / Staff / Owner route definitions
 router.post(
@@ -43,6 +53,17 @@ router.delete(
   protect,
   authorize('admin', 'owner'),
   deleteProduct
+);
+
+router.patch(
+  '/:id/stock',
+  protect,
+  authorize('admin', 'staff', 'owner'),
+  validate([
+    body('size').trim().notEmpty().withMessage('Size label is required'),
+    body('delta').isNumeric().withMessage('Delta must be a number'),
+  ]),
+  adjustStock
 );
 
 module.exports = router;
