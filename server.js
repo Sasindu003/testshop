@@ -6,6 +6,7 @@ const connectDB = require('./config/db');
 const errorHandler = require('./middleware/errorHandler');
 
 // Route imports
+const authRoutes = require('./routes/authRoutes');
 const fileRoutes = require('./routes/fileRoutes');
 
 const app = express();
@@ -32,6 +33,7 @@ app.get('/api/health', (_req, res) => {
   res.json({ success: true, message: 'ok' });
 });
 
+app.use('/api/auth', authRoutes);
 app.use('/api/files', fileRoutes);
 
 // -- 404 handler --
