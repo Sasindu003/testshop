@@ -56,6 +56,9 @@ const statusHistorySchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
+    note: {
+      type: String,
+    },
   },
   { _id: false }
 );
