@@ -3,7 +3,11 @@ const router = express.Router();
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const { JWT_SECRET } = require('../config/env');
-const { getRecommendation } = require('../controllers/aiStylistController');
+const { protect, authorize } = require('../middleware/auth');
+const {
+  getRecommendation,
+  getStylistLogs,
+} = require('../controllers/aiStylistController');
 
 /**
  * Optional authentication middleware:
@@ -27,7 +31,16 @@ const optionalProtect = async (req, res, next) => {
   next();
 };
 
-// POST /ai-stylist/recommend
+// POST /ai-stylist/recommend (guest or customer)
 router.post('/ai-stylist/recommend', optionalProtect, getRecommendation);
 
+// GET /admin/ai-stylist/logs (admin / owner)
+router.get(
+  '/admin/ai-stylist/logs',
+  protect,
+  authorize('admin', 'owner'),
+  getStylistLogs
+);
+
 module.exports = router;
+

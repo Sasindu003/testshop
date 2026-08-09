@@ -4,7 +4,7 @@ const { createError } = require('../utils/response');
 /**
  * Service to fetch styling recommendation from an LLM grounded in current in-stock catalog
  */
-exports.getStylingRecommendation = async ({ prompt, budget, category, sessionId }) => {
+exports.getStylingRecommendation = async ({ prompt, budget, category, sessionId, previousLogs = [] }) => {
   // 1. Fetch in-stock active products from MongoDB context
   const filter = { isActive: true };
 
@@ -57,7 +57,16 @@ exports.getStylingRecommendation = async ({ prompt, budget, category, sessionId 
     );
   }
 
-  const systemMessage = `You are a professional AI fashion stylist. Analyze the user's styling request and recommend an outfit using ONLY the provided catalog of available in-stock products.
+  // Build light personalization summary from prior logs
+  let personalizationContext = '';
+  if (Array.isArray(previousLogs) && previousLogs.length > 0) {
+    const pastQueries = previousLogs
+      .map((log) => `"- ${log.query}"`)
+      .join('\n');
+    personalizationContext = `\nUser's Recent Interaction History & Preferences:\n${pastQueries}\nConsider these past preferences for subtle personalization when selecting items.\n`;
+  }
+
+  const systemMessage = `You are a professional AI fashion stylist. Analyze the user's styling request and recommend an outfit using ONLY the provided catalog of available in-stock products.${personalizationContext}
 
 Catalog:
 ${JSON.stringify(catalogContext, null, 2)}
@@ -67,6 +76,7 @@ Requirements:
 2. Return your response in STRICT JSON format with exactly two fields:
    - "rationale": A short, friendly explanation of why these products match the styling request.
    - "recommendedProductIds": An array of product ID strings chosen from the catalog.`;
+
 
   const userMessage = `User Request: "${prompt || 'Suggest a stylish outfit'}"` +
     (budget ? `\nBudget limit: $${budget}` : '');
