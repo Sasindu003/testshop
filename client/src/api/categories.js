@@ -12,10 +12,14 @@ export const getCategoryById = (id) =>
 
 // ── Admin / Owner ────────────────────────────────────────────────────────────
 export const createCategory = (data) =>
-  axiosClient.post('/categories', data);
+  axiosClient.post('/categories', data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
 
 export const updateCategory = (id, data) =>
-  axiosClient.put(`/categories/${id}`, data);
+  axiosClient.put(`/categories/${id}`, data, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
 
 export const deleteCategory = (id) =>
   axiosClient.delete(`/categories/${id}`);

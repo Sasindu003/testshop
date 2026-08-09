@@ -19,6 +19,7 @@ const WishlistPage    = React.lazy(() => import('./pages/WishlistPage'));
 const ProfilePage     = React.lazy(() => import('./pages/ProfilePage'));
 const AiStylistPage   = React.lazy(() => import('./pages/AiStylistPage'));
 const AdminDashboard  = React.lazy(() => import('./pages/admin/AdminDashboard'));
+const AdminCategories = React.lazy(() => import('./pages/admin/AdminCategories'));
 const AdminProducts   = React.lazy(() => import('./pages/admin/AdminProducts'));
 const AdminOrders     = React.lazy(() => import('./pages/admin/AdminOrders'));
 const AdminCoupons    = React.lazy(() => import('./pages/admin/AdminCoupons'));
@@ -71,6 +72,7 @@ function App() {
             }
           >
             <Route index              element={<AdminDashboard />} />
+            <Route path="categories"  element={<AdminCategories />} />
             <Route path="products"    element={<AdminProducts />} />
             <Route path="orders"      element={<AdminOrders />} />
             <Route path="coupons"     element={<AdminCoupons />} />
