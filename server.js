@@ -68,8 +68,16 @@ app.use('/api/', generalLimiter);
 
 // -- Routes --
 app.get('/api/health', (_req, res) => {
-  res.json({ success: true, message: 'ok' });
+  const mongoose = require('mongoose');
+  const dbStateMap = { 0: 'Disconnected', 1: 'Connected', 2: 'Connecting', 3: 'Disconnecting' };
+  const dbState = mongoose.connection.readyState;
+  res.json({ 
+    success: dbState === 1, 
+    dbStatus: dbStateMap[dbState] || 'Unknown',
+    dbState 
+  });
 });
+
 
 app.use('/api/auth', authLimiter, authRoutes);
 app.use('/api/categories', categoryRoutes);

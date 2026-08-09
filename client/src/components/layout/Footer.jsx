@@ -76,7 +76,11 @@ export default function Footer({ links = [], socialLinks = [] }) {
 
         {/* Bottom bar */}
         <div className="border-t border-border pt-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-secondary font-sans">
-          <p>© {year} Testshop. All rights reserved.</p>
+          <div className="flex items-center gap-3">
+            <p>© {year} Testshop. All rights reserved.</p>
+            {/* Realtime MongoDB Indicator */}
+            <MongoStatusBadge />
+          </div>
           <div className="flex items-center gap-4">
             <Link to="/privacy" className="hover:text-primary transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent rounded">Privacy Policy</Link>
             <Link to="/terms" className="hover:text-primary transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent rounded">Terms of Service</Link>
@@ -86,3 +90,52 @@ export default function Footer({ links = [], socialLinks = [] }) {
     </footer>
   );
 }
+
+function MongoStatusBadge() {
+  const [status, setStatus] = React.useState({ state: 'checking', text: 'MongoDB: Checking...' });
+
+  React.useEffect(() => {
+    let isMounted = true;
+    const checkDb = async () => {
+      try {
+        const res = await fetch('/api/health');
+        const data = await res.json();
+        if (isMounted) {
+          if (data.dbState === 1) {
+            setStatus({ state: 'connected', text: 'MongoDB Connected' });
+          } else if (data.dbState === 2) {
+            setStatus({ state: 'connecting', text: 'MongoDB Connecting...' });
+          } else {
+            setStatus({ state: 'disconnected', text: `MongoDB ${data.dbStatus || 'Disconnected'}` });
+          }
+        }
+      } catch (err) {
+        if (isMounted) {
+          setStatus({ state: 'disconnected', text: 'MongoDB Disconnected' });
+        }
+      }
+    };
+
+    checkDb();
+    const interval = setInterval(checkDb, 10000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
+
+  const colorMap = {
+    connected: 'bg-emerald-500',
+    connecting: 'bg-amber-500 animate-pulse',
+    disconnected: 'bg-rose-500',
+    checking: 'bg-slate-400 animate-pulse'
+  };
+
+  return (
+    <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-surface border border-border text-[11px] font-medium text-secondary">
+      <span className={`w-2 h-2 rounded-full ${colorMap[status.state]}`} />
+      <span>{status.text}</span>
+    </div>
+  );
+}
+
