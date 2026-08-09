@@ -34,4 +34,8 @@ module.exports = {
   PORT: parseInt(process.env.PORT, 10) || 5000,
   NODE_ENV: process.env.NODE_ENV || 'development',
   CLIENT_URL: process.env.CLIENT_URL,
+  AI_STYLIST_API_KEY: process.env.AI_STYLIST_API_KEY,
+  AI_STYLIST_API_URL: process.env.AI_STYLIST_API_URL,
+  AI_STYLIST_MODEL: process.env.AI_STYLIST_MODEL,
 };
+

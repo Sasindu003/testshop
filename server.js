@@ -20,6 +20,7 @@ const dashboardRoutes = require('./routes/dashboardRoutes');
 const cartRoutes = require('./routes/cartRoutes');
 const reviewRoutes = require('./routes/reviewRoutes');
 const wishlistRoutes = require('./routes/wishlistRoutes');
+const aiStylistRoutes = require('./routes/aiStylistRoutes');
 
 const app = express();
 
@@ -81,6 +82,7 @@ app.use('/api', dashboardRoutes);
 app.use('/api/cart', cartRoutes);
 app.use('/api', reviewRoutes);
 app.use('/api/wishlist', wishlistRoutes);
+app.use('/api', aiStylistRoutes);
 
 // -- 404 handler --
 app.use((_req, res) => {
