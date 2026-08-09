@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Navbar from '../layout/Navbar';
 import Footer from '../layout/Footer';
+import AIStylistWidget from '../AIStylistWidget';
 import { getCategories } from '../../api/categories';
 import { Instagram, Twitter, Facebook } from 'lucide-react';
 
@@ -31,6 +32,8 @@ const SOCIAL_LINKS = [
 
 export default function PublicLayout() {
   const [categories, setCategories] = useState([]);
+  const location = useLocation();
+  const showWidget = location.pathname !== '/ai-stylist';
 
   useEffect(() => {
     getCategories()
@@ -45,6 +48,7 @@ export default function PublicLayout() {
         <Outlet />
       </main>
       <Footer links={FOOTER_LINKS} socialLinks={SOCIAL_LINKS} />
+      {showWidget && <AIStylistWidget />}
     </div>
   );
 }
