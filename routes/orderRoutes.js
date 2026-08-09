@@ -7,6 +7,8 @@ const { body } = require('express-validator');
 
 const {
   createOrder,
+  getMyOrders,
+  getMyOrderById,
   getOrders,
   getOrderById,
   verifyOrder,
@@ -19,8 +21,15 @@ router.use(protect);
 
 // ── Customer routes ─────────────────────────────────────────────────────────
 
-// POST /orders (or /api/orders)
+// POST /orders
 router.post('/orders', upload.single('paymentSlip'), createOrder);
+
+// GET /orders
+router.get('/orders', getMyOrders);
+
+// GET /orders/:id
+router.get('/orders/:id', getMyOrderById);
+
 
 // ── Admin / Owner routes ────────────────────────────────────────────────────
 

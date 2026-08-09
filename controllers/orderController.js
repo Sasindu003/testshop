@@ -153,6 +153,74 @@ exports.createOrder = asyncHandler(async (req, res) => {
   sendSuccess(res, 201, 'Order placed successfully', order);
 });
 
+/**
+ * GET /api/orders
+ * Protected (Customer). Returns the authenticated customer's own orders, paginated, filterable by status.
+ */
+exports.getMyOrders = asyncHandler(async (req, res) => {
+  const { status, page = 1, limit = 10 } = req.query;
+
+  const filter = { customer: req.user._id };
+  if (status) {
+    filter.status = status;
+  }
+
+  const pageNumber = Math.max(1, parseInt(page, 10) || 1);
+  const limitNumber = Math.min(100, parseInt(limit, 10) || 10);
+  const skip = (pageNumber - 1) * limitNumber;
+
+  const [orders, total] = await Promise.all([
+    Order.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limitNumber)
+      .populate('items.product', 'name images'),
+    Order.countDocuments(filter),
+  ]);
+
+  sendSuccess(res, 200, 'Customer orders retrieved successfully', {
+    orders,
+    pagination: {
+      total,
+      page: pageNumber,
+      limit: limitNumber,
+      totalPages: Math.ceil(total / limitNumber),
+    },
+  });
+});
+
+/**
+ * GET /api/orders/:id
+ * Protected (Customer / Admin). Returns order details by ID.
+ * Returns 404 if the order doesn't belong to req.user, unless requester is admin/owner.
+ */
+exports.getMyOrderById = asyncHandler(async (req, res) => {
+  const order = await Order.findById(req.params.id)
+    .populate('customer', 'name email')
+    .populate('items.product', 'name images');
+
+  if (!order) {
+    throw createError(404, 'Order not found');
+  }
+
+  const isOwner = order.customer._id.toString() === req.user._id.toString();
+  const isAdminOrOwner = ['admin', 'owner'].includes(req.user.role);
+
+  if (!isOwner && !isAdminOrOwner) {
+    throw createError(404, 'Order not found');
+  }
+
+  const orderObj = order.toObject();
+  if (order.paymentSlipFileId) {
+    const protocol = req.protocol;
+    const host = req.get('host');
+    orderObj.paymentSlipUrl = `${protocol}://${host}/api/files/${order.paymentSlipFileId}`;
+  }
+
+  sendSuccess(res, 200, 'Order retrieved successfully', orderObj);
+});
+
+
 
 /**
  * GET /api/admin/orders
