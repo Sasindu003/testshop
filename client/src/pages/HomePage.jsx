@@ -118,35 +118,8 @@ export default function HomePage() {
               ))}
             </div>
           )}
-      {/* ── Database Connection Status Indicator ─────────────────────── */}
-      <section className="py-6 bg-background border-t border-border">
-        <div className="max-w-7xl mx-auto px-4 text-center font-sans text-xs sm:text-sm">
-          <DbStatusIndicator />
         </div>
       </section>
     </div>
   );
 }
-
-function DbStatusIndicator() {
-  const [dbStatus, setDbStatus] = React.useState({ loading: true, connected: false, status: 'Checking...' });
-
-  React.useEffect(() => {
-    fetch('/api/db-status')
-      .then((res) => res.json())
-      .then((data) => setDbStatus({ loading: false, connected: data.connected, status: data.status }))
-      .catch(() => setDbStatus({ loading: false, connected: false, status: 'Disconnected' }));
-  }, []);
-
-  if (dbStatus.loading) {
-    return <span className="text-secondary">Checking MongoDB status...</span>;
-  }
-
-  return (
-    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-surface text-secondary">
-      <span className={`w-2.5 h-2.5 rounded-full ${dbStatus.connected ? 'bg-emerald-500' : 'bg-red-500'}`} />
-      <span>MongoDB: <strong className={dbStatus.connected ? 'text-emerald-600' : 'text-red-600'}>{dbStatus.status}</strong></span>
-    </div>
-  );
-}
-
