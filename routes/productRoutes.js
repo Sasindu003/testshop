@@ -11,7 +11,17 @@ const {
   deleteProduct,
   adjustStock,
   getLowStockInventory,
+  getProducts,
+  searchProducts,
 } = require('../controllers/productController');
+
+// ── Public routes (no auth) ──────────────────────────────────────────────────
+
+// GET /api/products/search?q=  — must come before /:id
+router.get('/search', searchProducts);
+
+// GET /api/products
+router.get('/', getProducts);
 
 // GET /api/products/admin/inventory/low-stock
 router.get(

@@ -208,3 +208,111 @@ exports.getLowStockInventory = asyncHandler(async (req, res) => {
   sendSuccess(res, { threshold, count: lowStockItems.length, items: lowStockItems });
 });
 
+/**
+ * GET /api/products
+ * Public. Filter by category, size, minPrice, maxPrice, hasDiscount.
+ * Sort: price_asc | price_desc | newest | rating.
+ */
+exports.getProducts = asyncHandler(async (req, res) => {
+  const {
+    category,
+    size,
+    minPrice,
+    maxPrice,
+    hasDiscount,
+    sort = 'newest',
+    page = 1,
+    limit = 12,
+  } = req.query;
+
+  const filter = { isActive: true };
+
+  if (category) filter.category = category;
+
+  if (minPrice !== undefined || maxPrice !== undefined) {
+    filter.basePrice = {};
+    if (minPrice !== undefined) filter.basePrice.$gte = Number(minPrice);
+    if (maxPrice !== undefined) filter.basePrice.$lte = Number(maxPrice);
+  }
+
+  // Filter by size availability (at least 1 unit in stock for that size)
+  if (size) {
+    filter.sizes = { $elemMatch: { size, stock: { $gt: 0 } } };
+  }
+
+  // Filter products that currently have an active discount window
+  if (hasDiscount === 'true') {
+    const now = new Date();
+    filter['discount.activeFrom'] = { $lte: now };
+    filter['discount.activeUntil'] = { $gte: now };
+  }
+
+  const sortMap = {
+    price_asc:  { basePrice: 1 },
+    price_desc: { basePrice: -1 },
+    newest:     { createdAt: -1 },
+    rating:     { ratingAverage: -1 },
+  };
+  const sortQuery = sortMap[sort] || { createdAt: -1 };
+
+  const pageNumber  = Math.max(1, parseInt(page, 10) || 1);
+  const limitNumber = Math.min(100, parseInt(limit, 10) || 12);
+  const skip        = (pageNumber - 1) * limitNumber;
+
+  const [products, total] = await Promise.all([
+    Product.find(filter)
+      .populate('category', 'name slug')
+      .sort(sortQuery)
+      .skip(skip)
+      .limit(limitNumber),
+    Product.countDocuments(filter),
+  ]);
+
+  sendSuccess(res, 200, 'Products retrieved successfully', {
+    products,
+    pagination: {
+      total,
+      page: pageNumber,
+      limit: limitNumber,
+      totalPages: Math.ceil(total / limitNumber),
+    },
+  });
+});
+
+/**
+ * GET /api/products/search?q=
+ * Public. Full-text search via the MongoDB text index on name+description.
+ */
+exports.searchProducts = asyncHandler(async (req, res) => {
+  const { q, page = 1, limit = 12 } = req.query;
+
+  if (!q || q.trim() === '') {
+    throw createError(400, 'Search query is required');
+  }
+
+  const pageNumber  = Math.max(1, parseInt(page, 10) || 1);
+  const limitNumber = Math.min(100, parseInt(limit, 10) || 12);
+  const skip        = (pageNumber - 1) * limitNumber;
+
+  const filter = { $text: { $search: q }, isActive: true };
+
+  const [products, total] = await Promise.all([
+    Product.find(filter, { score: { $meta: 'textScore' } })
+      .populate('category', 'name slug')
+      .sort({ score: { $meta: 'textScore' } })
+      .skip(skip)
+      .limit(limitNumber),
+    Product.countDocuments(filter),
+  ]);
+
+  sendSuccess(res, 200, 'Search results retrieved', {
+    query: q,
+    products,
+    pagination: {
+      total,
+      page: pageNumber,
+      limit: limitNumber,
+      totalPages: Math.ceil(total / limitNumber),
+    },
+  });
+});
