@@ -21,8 +21,27 @@ export const getInventoryHealth = () =>
 export const getAdminOrders = (params = {}) =>
   axiosClient.get('/admin/orders', { params });
 
+export const getAdminOrderById = (id) =>
+  axiosClient.get(`/admin/orders/${id}`);
+
+export const verifyOrder = (id) =>
+  axiosClient.patch(`/admin/orders/${id}/verify`);
+
+export const rejectOrder = (id, reason) =>
+  axiosClient.patch(`/admin/orders/${id}/reject`, { reason });
+
 export const updateOrderStatus = (id, status) =>
   axiosClient.patch(`/admin/orders/${id}/status`, { status });
+
+// ── Customers ─────────────────────────────────────────────────────────────────
+export const getCustomers = (params = {}) =>
+  axiosClient.get('/admin/customers', { params });
+
+export const getCustomerById = (id) =>
+  axiosClient.get(`/admin/customers/${id}`);
+
+export const deactivateCustomer = (id) =>
+  axiosClient.patch(`/admin/customers/${id}/deactivate`);
 
 // ── Users ─────────────────────────────────────────────────────────────────────
 export const getUsers = (params = {}) =>

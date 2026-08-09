@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, ShoppingBag, ShoppingCart, Users, Tag, Sparkles, LogOut, Menu, X, Folder } from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, ShoppingCart, Users, UserCircle, Tag, Sparkles, LogOut, Menu, X, Folder } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import Button from '../ui/Button';
 
@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { label: 'Categories', to: '/admin/categories',  icon: Folder },
   { label: 'Products',   to: '/admin/products',    icon: ShoppingBag },
   { label: 'Orders',     to: '/admin/orders',      icon: ShoppingCart },
+  { label: 'Customers',  to: '/admin/customers',   icon: UserCircle },
   { label: 'Coupons',    to: '/admin/coupons',     icon: Tag },
   { label: 'Users',      to: '/admin/users',       icon: Users },
   { label: 'AI Stylist', to: '/admin/ai-stylist',  icon: Sparkles },
