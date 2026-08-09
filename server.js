@@ -17,6 +17,7 @@ const fileRoutes = require('./routes/fileRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const userRoutes = require('./routes/userRoutes');
 const dashboardRoutes = require('./routes/dashboardRoutes');
+const cartRoutes = require('./routes/cartRoutes');
 
 const app = express();
 
@@ -75,6 +76,7 @@ app.use('/api/files', fileRoutes);
 app.use('/api', orderRoutes);
 app.use('/api', userRoutes);
 app.use('/api', dashboardRoutes);
+app.use('/api/cart', cartRoutes);
 
 // -- 404 handler --
 app.use((_req, res) => {
