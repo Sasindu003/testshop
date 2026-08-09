@@ -1,6 +1,158 @@
 const Order = require('../models/Order');
+const Cart = require('../models/Cart');
+const Product = require('../models/Product');
+const Coupon = require('../models/Coupon');
 const asyncHandler = require('../utils/asyncHandler');
 const { sendSuccess, createError } = require('../utils/response');
+const { uploadToGridFS } = require('../middleware/upload');
+
+/**
+ * POST /api/orders
+ * Protected (Customer). Re-validates stock, applies optional coupon, snapshots item details,
+ * requires payment slip upload via GridFS, computes totals server-side only,
+ * creates order at status pending, increments coupon usedCount, and clears customer cart.
+ */
+exports.createOrder = asyncHandler(async (req, res) => {
+  const customerId = req.user._id;
+
+  // 1. Fetch customer cart
+  const cart = await Cart.findOne({ customer: customerId }).populate('items.product');
+  if (!cart || !cart.items || cart.items.length === 0) {
+    throw createError(400, 'Cart is empty. Cannot checkout.');
+  }
+
+  // 2. Validate payment slip upload
+  if (!req.file) {
+    throw createError(400, 'Payment slip upload is required');
+  }
+
+  // 3. Parse shipping address
+  let shippingAddress = req.body.shippingAddress;
+  if (typeof shippingAddress === 'string') {
+    try {
+      shippingAddress = JSON.parse(shippingAddress);
+    } catch (_e) {
+      throw createError(400, 'Invalid shipping address format');
+    }
+  }
+  if (!shippingAddress || !shippingAddress.line1 || !shippingAddress.city || !shippingAddress.postalCode) {
+    throw createError(400, 'Complete shipping address (line1, city, postalCode) is required');
+  }
+
+  // 4. Re-validate stock for every cart item & snapshot order items
+  const outOfStockItems = [];
+  const orderItems = [];
+
+  for (const item of cart.items) {
+    const product = item.product;
+    if (!product || !product.isActive) {
+      outOfStockItems.push({
+        productId: item.product ? item.product._id : null,
+        name: product ? product.name : 'Unknown Product',
+        size: item.size,
+        reason: 'Product no longer available',
+      });
+      continue;
+    }
+
+    const sizeEntry = product.sizes.find((s) => s.size === item.size);
+    if (!sizeEntry || sizeEntry.stock < item.quantity) {
+      outOfStockItems.push({
+        productId: product._id,
+        name: product.name,
+        size: item.size,
+        requestedQuantity: item.quantity,
+        availableStock: sizeEntry ? sizeEntry.stock : 0,
+        reason: 'Insufficient stock',
+      });
+    } else {
+      // Compute unit price server-side
+      const unitPrice = product.computeFinalPrice(item.size);
+      orderItems.push({
+        product: product._id,
+        name: product.name,
+        size: item.size,
+        unitPrice,
+        quantity: item.quantity,
+      });
+    }
+  }
+
+  if (outOfStockItems.length > 0) {
+    throw createError(400, 'Some items in your cart are out of stock or unavailable', { outOfStockItems });
+  }
+
+  // 5. Calculate subtotal server-side
+  let subtotal = orderItems.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+  subtotal = Math.round(subtotal * 100) / 100;
+
+  // 6. Handle optional coupon
+  const couponCode = req.body.couponCode;
+  let discountTotal = 0;
+  let appliedCoupon = null;
+
+  if (couponCode && typeof couponCode === 'string' && couponCode.trim() !== '') {
+    const coupon = await Coupon.findOne({ code: couponCode.trim().toUpperCase() });
+    const now = new Date();
+
+    if (!coupon || !coupon.isActive) {
+      throw createError(400, 'Invalid or inactive coupon code');
+    }
+    if (now < coupon.validFrom || now > coupon.validUntil) {
+      throw createError(400, 'Coupon has expired or is not active yet');
+    }
+    if (coupon.maxUses !== null && coupon.usedCount >= coupon.maxUses) {
+      throw createError(400, 'Coupon maximum usage limit reached');
+    }
+    if (subtotal < coupon.minOrderValue) {
+      throw createError(400, `Minimum order value for coupon is ${coupon.minOrderValue}`);
+    }
+
+    if (coupon.type === 'percentage') {
+      discountTotal = subtotal * (coupon.value / 100);
+    } else if (coupon.type === 'fixed') {
+      discountTotal = Math.min(subtotal, coupon.value);
+    }
+    discountTotal = Math.round(discountTotal * 100) / 100;
+    appliedCoupon = coupon;
+  }
+
+  // 7. Compute total server-side
+  const total = Math.max(0, Math.round((subtotal - discountTotal) * 100) / 100);
+
+  // 8. Upload payment slip to GridFS
+  const paymentSlipFileId = await uploadToGridFS(
+    req.file.buffer,
+    req.file.originalname,
+    req.file.mimetype
+  );
+
+  // 9. Create Order
+  const order = await Order.create({
+    customer: customerId,
+    items: orderItems,
+    shippingAddress,
+    paymentSlipFileId,
+    couponCode: appliedCoupon ? appliedCoupon.code : undefined,
+    subtotal,
+    discountTotal,
+    total,
+    status: 'pending',
+  });
+
+  // 10. Increment coupon usedCount on success
+  if (appliedCoupon) {
+    appliedCoupon.usedCount += 1;
+    await appliedCoupon.save();
+  }
+
+  // 11. Clear customer cart
+  cart.items = [];
+  await cart.save();
+
+  sendSuccess(res, 201, 'Order placed successfully', order);
+});
+
 
 /**
  * GET /api/admin/orders
