@@ -92,15 +92,18 @@ app.use((_req, res) => {
 // -- Centralized error handler --
 app.use(errorHandler);
 
-// -- Boot --
-const start = async () => {
-  await connectDB();
-  app.listen(env.PORT, () => {
-    console.log(`[Server] Running in ${env.NODE_ENV} on port ${env.PORT}`);
+// -- Boot (local dev / standalone server)
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  connectDB().then(() => {
+    app.listen(env.PORT, () => {
+      console.log(`[Server] Running on port ${env.PORT}`);
+    });
   });
-};
-
-start();
+} else {
+  // Ensure DB connects in serverless environment
+  connectDB();
+}
 
 // Export for serverless (Vercel)
 module.exports = app;
+
