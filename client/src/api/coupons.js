@@ -5,8 +5,8 @@ import axiosClient from './axiosClient';
  */
 
 // ── Customer ──────────────────────────────────────────────────────────────────
-export const validateCoupon = (code) =>
-  axiosClient.post('/coupons/validate', { code });
+export const validateCoupon = (data) =>
+  axiosClient.post('/coupons/validate', data);
 
 // ── Admin / Owner ────────────────────────────────────────────────────────────
 export const getCoupons = (params = {}) =>
